@@ -3,6 +3,8 @@ import java.awt.event.ActionListener;
 
 
 public class GuiClient {
+    private final Object monitor = new Object();
+
     private final JFrame frame = new JFrame();
     private final JPanel panel = new JPanel();
     private final JProgressBar progressBar = new JProgressBar();
@@ -20,20 +22,29 @@ public class GuiClient {
 
     private Runnable createValueChanger(int goalValue) {
         return () -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                synchronized (progressBar) {
-                    int currentValue = progressBar.getValue();
-                    while (currentValue != goalValue) {
-                        currentValue = currentValue + (int) Math.signum(goalValue - currentValue);
-                        progressBar.setValue(currentValue);
+            boolean stopped = false;
+
+            while (!stopped && !Thread.currentThread().isInterrupted()) {
+                while (progressBar.getValue() != goalValue) {
+                    synchronized (monitor) {
+                        int currentValue = progressBar.getValue();
+                        progressBar.setValue(currentValue + (int) Math.signum(goalValue - currentValue));
+
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            stopped = true;
+                            break;
+                        }
                     }
+                    Thread.yield();
                 }
             }
         };
     }
 
     public GuiClient() {
-        progressBar.setValue(Values.INITIAL_VALUE);
+        progressBar.setValue(ProgressBarValues.INITIAL_VALUE);
 
         setupFrame();
         setupPanel();
@@ -41,11 +52,9 @@ public class GuiClient {
 
     private void setupFrame() {
         frame.setVisible(true);
-        frame.setBounds(500, 250, 750, 200);
+        frame.setBounds(500, 250, 750, 100);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.add(panel);
-        panel.add(firstThreadPriority);
-        panel.add(secondThreadPriority);
     }
 
     private void setupPanel() {
@@ -53,17 +62,20 @@ public class GuiClient {
 
         panel.add(startButton);
         setupStartButton();
-        startButton.setEnabled(true);
 
         panel.add(stopButton);
         setupStopButton();
-        stopButton.setEnabled(false);
+
+        panel.add(firstThreadPriority);
+        panel.add(secondThreadPriority);
     }
 
     private void setupStartButton() {
+        startButton.setEnabled(true);
+
         startButton.addActionListener(e -> {
-            firstThread = new Thread(createValueChanger(Values.FIRST_VALUE));
-            secondThread = new Thread(createValueChanger(Values.SECOND_VALUE));
+            firstThread = new Thread(createValueChanger(ProgressBarValues.FIRST_VALUE));
+            secondThread = new Thread(createValueChanger(ProgressBarValues.SECOND_VALUE));
 
             firstThreadPriority.addActionListener(createPriorityChanger(firstThreadPriority, firstThread));
             secondThreadPriority.addActionListener(createPriorityChanger(secondThreadPriority, secondThread));
@@ -77,6 +89,8 @@ public class GuiClient {
     }
 
     private void setupStopButton() {
+        stopButton.setEnabled(false);
+
         stopButton.addActionListener(e -> {
             firstThread.interrupt();
             secondThread.interrupt();
