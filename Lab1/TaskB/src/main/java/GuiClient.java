@@ -1,9 +1,7 @@
 import javax.swing.*;
 
 public class GuiClient {
-    private final Integer monitor = Integer.valueOf("1");
-
-    private int semaphore = SemaphoreValues.FREE;
+    private Integer semaphore = SemaphoreValues.FREE;
 
     private final JFrame frame = new JFrame();
     private final JPanel panel = new JPanel();
@@ -73,11 +71,13 @@ public class GuiClient {
 
     private void createStartFirstThreadButton() {
         firstStartButton.addActionListener(e -> {
-            if (semaphore == SemaphoreValues.TAKEN) {
-                JOptionPane.showMessageDialog(null, "Blocked by 2nd thread");
-                return;
+            synchronized (semaphore) {
+                if (semaphore == SemaphoreValues.TAKEN) {
+                    JOptionPane.showMessageDialog(null, "Blocked by 2nd thread");
+                    return;
+                }
+                semaphore = SemaphoreValues.TAKEN;
             }
-            semaphore = SemaphoreValues.TAKEN;
 
             firstStartButton.setEnabled(false);
             firstStopButton.setEnabled(true);
