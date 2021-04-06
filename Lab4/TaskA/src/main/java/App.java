@@ -45,13 +45,17 @@ public class App {
         FutureTask<String> findIvanNumberTask = reader.findNumberByName("Ivan");
         FutureTask<String> find54321NameTask = reader.findNameByNumber("54321");
 
-        writer.delete("Borys", null).get();
-
-        printDatabaseContent();
-
         System.out.printf("Borys number: %s\n", findBorysNumberTask.get());
         System.out.printf("Ivan number: %s\n", findIvanNumberTask.get());
         System.out.printf("Person with number 54321: %s\n", find54321NameTask.get());
+
+        FutureTask<Boolean> deleteBorys = writer.delete("Borys", null);
+        FutureTask<Boolean> delete00000 = writer.delete(null, "00000");
+
+        System.out.printf("Borys deletion result: %s\n", deleteBorys.get());
+        System.out.printf("00000 deletion result: %s\n", delete00000.get());
+
+        printDatabaseContent();
 
         System.out.printf("Borys number (2nd try): %s\n", reader.findNumberByName("Borys").get());
     }

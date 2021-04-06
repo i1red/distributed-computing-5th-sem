@@ -33,31 +33,32 @@ public class Writer {
         return futureTask;
     }
 
-    public FutureTask<Boolean> delete(String name, String number) {
+    public FutureTask<Boolean> delete(String targetName, String targetNumber) {
         FutureTask<Boolean> futureTask = new FutureTask<>(
                 () -> {
+                    this.lock.writeLock();
                     File tempFile = new File("~tempfile.txt");
-                    String recordToDeleteString = String.format("%s%s%s",name, Const.VALUE_SEPARATOR, number);
                     boolean result = false;
 
-                    this.lock.writeLock();
                     try (
-                            BufferedReader reader = new BufferedReader(new FileReader(filepath));
+                            BufferedReader reader = new BufferedReader(new FileReader(this.filepath));
                             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))
                     ) {
                         for (String recordString = reader.readLine(); recordString != null; recordString = reader.readLine()) {
                             String[] values = recordString.split(Const.VALUE_SEPARATOR);
-                            String name_ = values[0], number_ = values[1];
+                            String name = values[0], number = values[1];
 
-                            if ((name == null || name.equals(name_)) && (number == null || number.equals(number_))) {
+                            if ((targetName == null || targetName.equals(name)) && (targetNumber == null || targetNumber.equals(number))) {
                                 result = true;
                             } else {
                                 writer.write(String.format("%s%s", recordString, Const.LINE_SEPARATOR));
                             }
                         }
                     }
+                    result = result && new File(filepath).delete() && tempFile.renameTo(new File(this.filepath));
                     this.lock.writeUnlock();
-                    return result && new File(filepath).delete() && tempFile.renameTo(new File(filepath));
+
+                    return result;
                 }
         );
 
