@@ -5,6 +5,7 @@ import model.mapper.Mapper;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -70,6 +71,7 @@ public class DAO<T> {
             preparedStatement.executeUpdate();
 
             try (ResultSet resultSet = preparedStatement.getGeneratedKeys()){
+                resultSet.next();
                 return mapper.fromResultSet(resultSet);
             }
         }
@@ -101,7 +103,7 @@ public class DAO<T> {
 
     public List<T> list() throws SQLException {
         List<T> entities = new ArrayList<>();
-        String sql = String.format("SELECT * FROM %s WHERE", this.tableName);
+        String sql = String.format("SELECT * FROM %s", this.tableName);
 
         try (
                 Connection connection = JdbcConnectionPool.getInstance().getConnection();
